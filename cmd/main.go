@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"image"
 	"log"
 
@@ -12,16 +13,18 @@ func main() {
 	const (
 		prntscURL = "https://prnt.sc/"
 		idLen     = 6
-		retryMax  = 3
 	)
 
+	maxRetries := flag.Int("retries", 3, "the number of retries if an image URL can't be found")
+
+	flag.Parse()
 	log.SetPrefix("prnt.sc >> ")
 
 	var imgURL string
 
 	retries := 0
 	for imgURL == "" {
-		if retries == retryMax {
+		if retries == *maxRetries {
 			log.Fatalf("retries exhausted")
 		}
 
