@@ -45,6 +45,7 @@ func ShowImage(img image.Image) {
 
 		win.SetContent(content)
 		win.Resize(fyne.NewSize(imgWidth, imgHeight))
+		win.CenterOnScreen()
 	}
 
 	text1 = widget.NewButton("get a new pic", goBtn)
