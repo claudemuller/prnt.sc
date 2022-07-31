@@ -30,7 +30,9 @@ func main() {
 	log.SetPrefix("prnt.sc >> ")
 
 	go func() {
-		w := app.NewWindow()
+		w := app.NewWindow(func(m unit.Metric, c *app.Config) {
+			c.Title = "prnt.sc"
+		})
 
 		err := run(w, maxRetries)
 		if err != nil {
