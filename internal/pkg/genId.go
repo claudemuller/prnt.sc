@@ -1,5 +1,4 @@
-package internal
-
+package pkg
 
 import (
 	"crypto/rand"
