@@ -2,54 +2,85 @@ package pkg
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"log"
 	"strings"
+
+	"gioui.org/app"
+	"gioui.org/font/gofont"
+	"gioui.org/io/system"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/paint"
+	"gioui.org/unit"
+	"gioui.org/widget"
+	"gioui.org/widget/material"
 )
 
-// func ShowImage(img image.Image) {
-// 	a := app.New()
-// 	win := a.NewWindow("prnt.sc")
-// 	maxRetries := 3
-//
-// 	var (
-// 		content   *fyne.Container
-// 		canvasImg *canvas.Image
-// 		text1     *widget.Button
-// 	)
-//
-// 	goBtn := func() {
-// 		if img == nil {
-// 			var err error
-//
-// 			img, err = GetNewImage("https://prnt.sc/", 6, &maxRetries)
-// 			if err != nil {
-// 				log.Printf("error getting new image: %v", err)
-// 			}
-// 		}
-//
-// 		imgWidth := float32(img.Bounds().Size().X)
-// 		imgHeight := float32(img.Bounds().Size().Y + 20)
-//
-// 		canvasImg = canvas.NewImageFromImage(img)
-// 		img = nil
-//
-// 		canvasImg.SetMinSize(fyne.Size{Width: imgWidth, Height: imgHeight})
-// 		content = container.New(layout.NewVBoxLayout(), canvasImg, text1)
-//
-// 		win.SetContent(content)
-// 		win.Resize(fyne.NewSize(imgWidth, imgHeight))
-// 		win.CenterOnScreen()
-// 	}
-//
-// 	text1 = widget.NewButton("get a new pic", goBtn)
-//
-// 	goBtn()
-//
-// 	win.ShowAndRun()
-// }
+const (
+	prntscURL = "https://prnt.sc/"
+	idLen     = 6
+)
+
+func Run(state *State) error {
+	th := material.NewTheme(gofont.Collection())
+	img, _ := GetNewImage(prntscURL, idLen, state.MaxRetries)
+
+	var ops op.Ops
+
+	var button widget.Clickable
+
+	for {
+		e := <-state.Win.Events()
+		switch e := e.(type) {
+		case system.DestroyEvent:
+			return e.Err
+		case system.FrameEvent:
+			gtx := layout.NewContext(&ops, e)
+
+			resizeWin := func(m unit.Metric, c *app.Config) {
+				s := img.Bounds().Size()
+				s.Y += 40
+				c.Size = s
+			}
+
+			for button.Clicked() {
+				img, _ = GetNewImage(prntscURL, idLen, state.MaxRetries)
+
+				state.Win.Option(resizeWin)
+			}
+
+			layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					pngImageOp := paint.NewImageOp(img)
+					pngImageOp.Add(gtx.Ops)
+
+					imgWidget := widget.Image{
+						Src:   pngImageOp,
+						Scale: 1,
+					}
+
+					return imgWidget.Layout(gtx)
+				}),
+				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+					return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						btn := material.Button(th, &button, "get another pic")
+						btn.CornerRadius = 0
+
+						return btn.Layout(gtx)
+					})
+				}),
+			)
+
+			state.Win.Option(resizeWin)
+
+			e.Frame(gtx.Ops)
+		}
+	}
+}
 
 func GetNewImage(prntscURL string, idLen int, maxRetries *int) (image.Image, error) {
 	var imgURL string
@@ -58,6 +89,10 @@ func GetNewImage(prntscURL string, idLen int, maxRetries *int) (image.Image, err
 	for imgURL == "" {
 		if retries == *maxRetries {
 			log.Fatalf("retries exhausted")
+		}
+
+		if retries > 0 {
+			log.Printf("failed to retrieve image, trying again: retry[%d]", retries)
 		}
 
 		id, err := GenID(idLen)
@@ -83,23 +118,26 @@ func GetNewImage(prntscURL string, idLen int, maxRetries *int) (image.Image, err
 		log.Fatalf("failed to retrieve image: %v", err)
 	}
 
-	urlPieces := strings.Split(imgURL, ".")
-	ext := urlPieces[len(urlPieces)-1]
-
-	var img image.Image
-
-	switch ext {
-	case "png":
-		img, err = png.Decode(bytes.NewReader(imgData))
-	case "jpeg":
-		fallthrough
-	case "jpg":
-		img, err = jpeg.Decode(bytes.NewReader(imgData))
-	}
-
+	img, err := decodeImg(imgURL, imgData)
 	if err != nil {
-		log.Fatalf("failed to decode image: %v", err)
+		log.Printf("failed to decode image, fetching a new image: %v", err)
 	}
 
 	return img, nil
+}
+
+func decodeImg(imgURL string, imgData []byte) (image.Image, error) {
+	urlPieces := strings.Split(imgURL, ".")
+	ext := urlPieces[len(urlPieces)-1]
+
+	switch ext {
+	case "png":
+		return png.Decode(bytes.NewReader(imgData))
+	case "jpeg":
+		fallthrough
+	case "jpg":
+		return jpeg.Decode(bytes.NewReader(imgData))
+	}
+
+	return nil, errors.New("decoding failed")
 }
