@@ -120,7 +120,7 @@ func GetNewImage(prntscURL string, idLen int, maxRetries *int) (image.Image, err
 
 	img, err := decodeImg(imgURL, imgData)
 	if err != nil {
-		log.Printf("failed to decode image, fetching a new image: %v", err)
+		log.Fatalf("failed to decode image: %v", err)
 	}
 
 	return img, nil
