@@ -4,6 +4,10 @@ go 1.18
 
 require (
 	fyne.io/fyne/v2 v2.2.3
+	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
+	github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1
+	github.com/golang-ui/nuklear v0.0.0-20200321220456-89da3f6a587a
+	github.com/xlab/closer v1.0.0
 	golang.org/x/net v0.0.0-20220728211354-c7608f3a8462
 )
 
@@ -15,7 +19,6 @@ require (
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
-	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211213063430-748e38ca8aec // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff // indirect
@@ -26,6 +29,8 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9 // indirect
 	github.com/stretchr/testify v1.7.2 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
+	github.com/veandco/go-sdl2 v0.4.24 // indirect
+	github.com/xlab/android-go v0.0.0-20180723170811-ebf4d6dd1830 // indirect
 	github.com/yuin/goldmark v1.4.0 // indirect
 	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
