@@ -1,4 +1,4 @@
-# prnt.sc [![MacOS](https://github.com/claudemuller/prnt.sc/actions/workflows/go.yml/badge.svg)](https://github.com/claudemuller/prnt.sc/actions/workflows/go.yml)
+# prnt.sc [![MacOS](https://github.com/claudemuller/prnt.sc/actions/workflows/macos.yml/badge.svg)](https://github.com/claudemuller/prnt.sc/actions/workflows/macos.yml)
 
 Fetches random images from the screenshot site `prnt.sc`
 
