@@ -8,11 +8,12 @@ import (
 	"runtime"
 	"time"
 
+	"prnt.sc/internal/pkg"
+
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/golang-ui/nuklear/nk"
 	"github.com/xlab/closer"
-	"prnt.sc/internal/pkg"
 )
 
 const (
@@ -152,8 +153,7 @@ func gfxMain(win *glfw.Window, ctx *nk.Context, state *State, img image.Image) {
 
 	// Layout
 	bounds := nk.NkRect(0, 0, state.winWidth, state.winHeight)
-	update := nk.NkBegin(ctx, "prnt.sc", bounds,
-		nk.WindowBorder|nk.WindowMovable|nk.WindowScalable|nk.WindowMinimizable|nk.WindowTitle)
+	update := nk.NkBegin(ctx, "prnt.sc", bounds, nk.WindowBorder)
 
 	var tex uint32
 
