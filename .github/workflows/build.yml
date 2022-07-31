@@ -28,6 +28,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install deps
+      run: "apt install libxkbcommon-x11-dev"
+      
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
