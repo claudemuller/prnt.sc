@@ -3,10 +3,12 @@ package pkg
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"log"
+	"os"
 	"strings"
 
 	"gioui.org/app"
@@ -31,7 +33,7 @@ func Run(state *State) error {
 
 	var ops op.Ops
 
-	var button widget.Clickable
+	var nextBtn, saveBtn widget.Clickable
 
 	for {
 		e := <-state.Win.Events()
@@ -42,20 +44,45 @@ func Run(state *State) error {
 			gtx := layout.NewContext(&ops, e)
 
 			resizeWin := func(m unit.Metric, c *app.Config) {
-				s := img.Bounds().Size()
+				s := img.Image.Bounds().Size()
 				s.Y += 40
 				c.Size = s
 			}
 
-			for button.Clicked() {
+			for nextBtn.Clicked() {
 				img, _ = GetNewImage(prntscURL, idLen, state.MaxRetries)
+
+				state.Win.Option(resizeWin)
+			}
+
+			for saveBtn.Clicked() {
+				saveLoc := os.Getenv("HOME")
+
+				f, err := os.Create(fmt.Sprintf("%s/temp/%s.%s", saveLoc, img.Filename["fn"], img.Filename["ext"]))
+				if err != nil {
+					log.Printf("could not create file: %v", err)
+				}
+				defer f.Close()
+
+				switch img.Filename["ext"] {
+				case "png":
+					if err = png.Encode(f, img.Image); err != nil {
+						log.Printf("failed to save .png: %v", err)
+					}
+				case "jpeg":
+					fallthrough
+				case "jpg":
+					if err = jpeg.Encode(f, img.Image, nil); err != nil {
+						log.Printf("failed to save .jpg: %v", err)
+					}
+				}
 
 				state.Win.Option(resizeWin)
 			}
 
 			layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					pngImageOp := paint.NewImageOp(img)
+					pngImageOp := paint.NewImageOp(img.Image)
 					pngImageOp.Add(gtx.Ops)
 
 					imgWidget := widget.Image{
@@ -66,12 +93,20 @@ func Run(state *State) error {
 					return imgWidget.Layout(gtx)
 				}),
 				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-					return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-						btn := material.Button(th, &button, "get another pic")
-						btn.CornerRadius = 0
+					return layout.Flex{}.Layout(gtx,
+						layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+							btn := material.Button(th, &nextBtn, "get another pic")
+							btn.CornerRadius = 0
 
-						return btn.Layout(gtx)
-					})
+							return btn.Layout(gtx)
+						}),
+						layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+							btn := material.Button(th, &saveBtn, "save pic")
+							btn.CornerRadius = 0
+
+							return btn.Layout(gtx)
+						}),
+					)
 				}),
 			)
 
@@ -82,12 +117,19 @@ func Run(state *State) error {
 	}
 }
 
-func GetNewImage(prntscURL string, idLen int, maxRetries *int) (image.Image, error) {
+type Filename map[string]string
+
+type Img struct {
+	Filename Filename
+	Image    image.Image
+}
+
+func GetNewImage(prntscURL string, idLen int, maxRetries *int) (*Img, error) {
 	var imgURL string
 
 	retries := 0
 	for imgURL == "" {
-		if retries == *maxRetries {
+		if retries > *maxRetries {
 			log.Fatalf("retries exhausted")
 		}
 
@@ -118,26 +160,40 @@ func GetNewImage(prntscURL string, idLen int, maxRetries *int) (image.Image, err
 		log.Fatalf("failed to retrieve image: %v", err)
 	}
 
-	img, err := decodeImg(imgURL, imgData)
+	i, err := decodeImg(imgURL, imgData)
 	if err != nil {
 		log.Fatalf("failed to decode image: %v", err)
 	}
 
-	return img, nil
+	return i, nil
 }
 
-func decodeImg(imgURL string, imgData []byte) (image.Image, error) {
-	urlPieces := strings.Split(imgURL, ".")
-	ext := urlPieces[len(urlPieces)-1]
+func decodeImg(imgURL string, imgData []byte) (*Img, error) {
+	urlPieces := strings.Split(imgURL, "/")
+	filename := strings.Split(urlPieces[len(urlPieces)-1], ".")
+	ext := filename[1]
+	fn := filename[0]
+
+	var err error
+
+	var im image.Image
 
 	switch ext {
 	case "png":
-		return png.Decode(bytes.NewReader(imgData))
+		im, err = png.Decode(bytes.NewReader(imgData))
 	case "jpeg":
 		fallthrough
 	case "jpg":
-		return jpeg.Decode(bytes.NewReader(imgData))
+		im, err = jpeg.Decode(bytes.NewReader(imgData))
+	default:
+		err = errors.New("decoding failed")
 	}
 
-	return nil, errors.New("decoding failed")
+	return &Img{
+		Filename: Filename{
+			"fn":  fn,
+			"ext": ext,
+		},
+		Image: im,
+	}, err
 }
