@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"log"
@@ -185,6 +186,8 @@ func decodeImg(imgURL string, imgData []byte) (*Img, error) {
 		fallthrough
 	case "jpg":
 		im, err = jpeg.Decode(bytes.NewReader(imgData))
+	case "gif":
+		im, err = gif.Decode(bytes.NewReader(imgData))
 	default:
 		err = errors.New("decoding failed")
 	}
